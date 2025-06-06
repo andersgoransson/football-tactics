@@ -5,9 +5,11 @@ class FootballTacticsBoard {
         this.players = [];
         this.selectedPlayer = null;
         this.isDragging = false;
+        this.formations = [];
         
         this.initializeBoard();
         this.attachEventListeners();
+        this.loadAvailableFormations();
     }
     
     initializeBoard() {
@@ -50,31 +52,31 @@ class FootballTacticsBoard {
     
     addDefaultPlayers() {
         const homeTeam = [
-            {id: 1, name: 'GK', x: 50, y: 300, team: 'home'},
-            {id: 2, name: 'RB', x: 150, y: 150, team: 'home'},
-            {id: 3, name: 'CB', x: 150, y: 250, team: 'home'},
-            {id: 4, name: 'CB', x: 150, y: 350, team: 'home'},
-            {id: 5, name: 'LB', x: 150, y: 450, team: 'home'},
-            {id: 6, name: 'CDM', x: 250, y: 300, team: 'home'},
-            {id: 7, name: 'RM', x: 320, y: 200, team: 'home'},
-            {id: 8, name: 'CM', x: 320, y: 300, team: 'home'},
-            {id: 9, name: 'LM', x: 320, y: 400, team: 'home'},
-            {id: 10, name: 'ST', x: 400, y: 250, team: 'home'},
-            {id: 11, name: 'ST', x: 400, y: 350, team: 'home'}
+            {id: 1, name: 'GK', position: 'GK', x: 50, y: 300, team: 'home'},
+            {id: 2, name: 'RB', position: 'RB', x: 150, y: 150, team: 'home'},
+            {id: 3, name: 'CB', position: 'CB', x: 150, y: 250, team: 'home'},
+            {id: 4, name: 'CB', position: 'CB', x: 150, y: 350, team: 'home'},
+            {id: 5, name: 'LB', position: 'LB', x: 150, y: 450, team: 'home'},
+            {id: 6, name: 'CDM', position: 'CDM', x: 250, y: 300, team: 'home'},
+            {id: 7, name: 'RM', position: 'RM', x: 320, y: 200, team: 'home'},
+            {id: 8, name: 'CM', position: 'CM', x: 320, y: 300, team: 'home'},
+            {id: 9, name: 'LM', position: 'LM', x: 320, y: 400, team: 'home'},
+            {id: 10, name: 'ST', position: 'ST', x: 400, y: 250, team: 'home'},
+            {id: 11, name: 'ST', position: 'ST', x: 400, y: 350, team: 'home'}
         ];
         
         const awayTeam = [
-            {id: 12, name: 'GK', x: 750, y: 300, team: 'away'},
-            {id: 13, name: 'RB', x: 650, y: 150, team: 'away'},
-            {id: 14, name: 'CB', x: 650, y: 250, team: 'away'},
-            {id: 15, name: 'CB', x: 650, y: 350, team: 'away'},
-            {id: 16, name: 'LB', x: 650, y: 450, team: 'away'},
-            {id: 17, name: 'CDM', x: 550, y: 300, team: 'away'},
-            {id: 18, name: 'RM', x: 480, y: 200, team: 'away'},
-            {id: 19, name: 'CM', x: 480, y: 300, team: 'away'},
-            {id: 20, name: 'LM', x: 480, y: 400, team: 'away'},
-            {id: 21, name: 'ST', x: 400, y: 250, team: 'away'},
-            {id: 22, name: 'ST', x: 400, y: 350, team: 'away'}
+            {id: 12, name: 'GK', position: 'GK', x: 750, y: 300, team: 'away'},
+            {id: 13, name: 'RB', position: 'RB', x: 650, y: 150, team: 'away'},
+            {id: 14, name: 'CB', position: 'CB', x: 650, y: 250, team: 'away'},
+            {id: 15, name: 'CB', position: 'CB', x: 650, y: 350, team: 'away'},
+            {id: 16, name: 'LB', position: 'LB', x: 650, y: 450, team: 'away'},
+            {id: 17, name: 'CDM', position: 'CDM', x: 550, y: 300, team: 'away'},
+            {id: 18, name: 'RM', position: 'RM', x: 480, y: 200, team: 'away'},
+            {id: 19, name: 'CM', position: 'CM', x: 480, y: 300, team: 'away'},
+            {id: 20, name: 'LM', position: 'LM', x: 480, y: 400, team: 'away'},
+            {id: 21, name: 'ST', position: 'ST', x: 400, y: 250, team: 'away'},
+            {id: 22, name: 'ST', position: 'ST', x: 400, y: 350, team: 'away'}
         ];
         
         this.ball = {id: 'ball', x: 400, y: 300};
@@ -210,11 +212,19 @@ class FootballTacticsBoard {
     }
     
     async saveFormation() {
+        const formationName = document.getElementById('formationName').value.trim();
+        if (!formationName) {
+            alert('Please enter a formation name');
+            return;
+        }
+        
         const formation = {
-            name: 'Current Formation',
+            name: formationName,
             players: this.players,
             ball: this.ball
         };
+        
+        console.log('Sending formation:', formation);
         
         try {
             const response = await fetch('/api/formations', {
@@ -227,19 +237,73 @@ class FootballTacticsBoard {
             
             if (response.ok) {
                 alert('Formation saved successfully!');
+                await this.loadAvailableFormations();
+            } else {
+                const errorData = await response.text();
+                console.error('Error response:', response.status, errorData);
+                alert(`Error saving formation: ${response.status}`);
             }
         } catch (error) {
             console.error('Error saving formation:', error);
+            alert('Error saving formation');
+        }
+    }
+    
+    async loadAvailableFormations() {
+        try {
+            const response = await fetch('/api/formations');
+            const formations = await response.json();
+            this.formations = formations;
+            
+            const select = document.getElementById('formationSelect');
+            select.innerHTML = '<option value="">Select a formation...</option>';
+            
+            formations.forEach(formation => {
+                const option = document.createElement('option');
+                option.value = formation.id;
+                option.textContent = `${formation.name} (${formation.created_at.substring(0, 10)})`;
+                select.appendChild(option);
+            });
+        } catch (error) {
+            console.error('Error loading available formations:', error);
         }
     }
     
     async loadFormation() {
+        const select = document.getElementById('formationSelect');
+        const formationId = select.value;
+        
+        if (!formationId) {
+            alert('Please select a formation to load');
+            return;
+        }
+        
         try {
-            const response = await fetch('/api/formations');
-            const data = await response.json();
-            console.log('Available formations:', data.formations);
+            const response = await fetch(`/api/formations/${formationId}`);
+            if (!response.ok) {
+                throw new Error('Formation not found');
+            }
+            
+            const formation = await response.json();
+            
+            // Load players
+            this.players = formation.players;
+            
+            // Load ball
+            if (formation.ball) {
+                this.ball = formation.ball;
+            }
+            
+            // Update formation name in input
+            document.getElementById('formationName').value = formation.name;
+            
+            // Redraw the board
+            this.drawPlayers();
+            
+            alert(`Formation "${formation.name}" loaded successfully!`);
         } catch (error) {
-            console.error('Error loading formations:', error);
+            console.error('Error loading formation:', error);
+            alert('Error loading formation');
         }
     }
     

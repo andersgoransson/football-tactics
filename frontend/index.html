@@ -10,8 +10,16 @@
     <div class="container">
         <h1>Football Tactics Board</h1>
         <div class="controls">
-            <button id="saveBtn">Save Formation</button>
-            <button id="loadBtn">Load Formation</button>
+            <div class="save-section">
+                <input type="text" id="formationName" placeholder="Formation name" value="Current Formation">
+                <button id="saveBtn">Save Formation</button>
+            </div>
+            <div class="load-section">
+                <select id="formationSelect">
+                    <option value="">Select a formation...</option>
+                </select>
+                <button id="loadBtn">Load Formation</button>
+            </div>
             <button id="clearBtn">Clear Board</button>
         </div>
         <div class="pitch-container">

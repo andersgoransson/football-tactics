@@ -11,10 +11,10 @@ COPY pyproject.toml ./
 
 # Create virtual environment and install dependencies
 RUN uv venv && \
-    uv pip install fastapi uvicorn[standard] pydantic python-multipart
+    uv pip install fastapi uvicorn[standard] pydantic python-multipart sqlalchemy psycopg2-binary alembic
 
 # Copy application code
-COPY main.py ./
+COPY main.py models.py database.py ./
 COPY frontend/ ./frontend/
 
 # Expose port

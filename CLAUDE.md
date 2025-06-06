@@ -39,6 +39,8 @@ docker-compose up --build
 ## Project Structure
 
 - `main.py` - FastAPI backend with API endpoints and static file serving
+- `models.py` - SQLAlchemy database models (Formation, Player, Ball)
+- `database.py` - Database connection and session management
 - `frontend/` - JavaScript frontend application
   - `index.html` - Main application page
   - `app.js` - Tactical board logic and API integration
@@ -49,16 +51,32 @@ docker-compose up --build
 - `docker-compose.yml` - Multi-container orchestration
 - `nginx.conf` - Nginx configuration for frontend proxy
 
+## Database
+
+The application uses PostgreSQL for persistent formation storage:
+- **Database**: PostgreSQL 15 Alpine
+- **ORM**: SQLAlchemy 2.0+ with async support
+- **Tables**: formations, players, balls
+- **Features**: Formation save/load, player positioning, ball tracking
+
+**Database Schema:**
+- `formations`: id, name, created_at, description
+- `players`: id, formation_id, player_id, name, position, x, y, team
+- `balls`: id, formation_id, ball_id, x, y
+
 ## Docker Setup
 
 The application uses a multi-container architecture:
-- **Backend**: Python FastAPI with uv package manager
+- **Database**: PostgreSQL with persistent volume storage
+- **Backend**: Python FastAPI with uv package manager and SQLAlchemy
 - **Frontend**: Nginx serving static files with API proxy
 - **Network**: Bridge network for container communication
 
 ## Key Features
 
-- Interactive drag-and-drop player positioning
-- Formation save/load functionality via API
-- Responsive football pitch visualization
+- Interactive drag-and-drop player positioning (22 players + ball)
+- Persistent formation storage in PostgreSQL database
+- Formation save/load functionality with dropdown selection
+- Responsive football pitch visualization with proper markings
 - Team differentiation (home/away colors)
+- Formation naming and timestamp tracking
