@@ -147,6 +147,7 @@ class FootballTacticsBoard {
         
         document.getElementById('saveBtn').addEventListener('click', () => this.saveFormation());
         document.getElementById('loadBtn').addEventListener('click', () => this.loadFormation());
+        document.getElementById('deleteBtn').addEventListener('click', () => this.deleteFormation());
         document.getElementById('clearBtn').addEventListener('click', () => this.clearBoard());
     }
     
@@ -304,6 +305,43 @@ class FootballTacticsBoard {
         } catch (error) {
             console.error('Error loading formation:', error);
             alert('Error loading formation');
+        }
+    }
+    
+    async deleteFormation() {
+        const select = document.getElementById('formationSelect');
+        const formationId = select.value;
+        
+        if (!formationId) {
+            alert('Please select a formation to delete');
+            return;
+        }
+        
+        const selectedOption = select.options[select.selectedIndex];
+        const formationName = selectedOption.textContent;
+        
+        if (!confirm(`Are you sure you want to delete formation "${formationName}"? This action cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/formations/${formationId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                alert('Formation deleted successfully!');
+                await this.loadAvailableFormations();
+                // Clear the selection
+                select.value = '';
+            } else {
+                const errorData = await response.text();
+                console.error('Error response:', response.status, errorData);
+                alert(`Error deleting formation: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('Error deleting formation:', error);
+            alert('Error deleting formation');
         }
     }
     

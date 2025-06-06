@@ -158,6 +158,18 @@ async def get_formation(formation_id: int, db: Session = Depends(get_db)):
         created_at=formation.created_at.isoformat()
     )
 
+@app.delete("/formations/{formation_id}")
+async def delete_formation(formation_id: int, db: Session = Depends(get_db)):
+    formation = db.query(DBFormation).filter(DBFormation.id == formation_id).first()
+    
+    if not formation:
+        raise HTTPException(status_code=404, detail="Formation not found")
+    
+    db.delete(formation)
+    db.commit()
+    
+    return {"message": "Formation deleted successfully"}
+
 app.mount("/", StaticFiles(directory="frontend", html=True), name="static")
 
 if __name__ == "__main__":
