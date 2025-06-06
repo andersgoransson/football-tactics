@@ -10,6 +10,7 @@ class FootballTacticsBoard {
         this.formations = [];
         this.dragStartPos = { x: 0, y: 0 }; // Starting position for drag
         this.draggedPlayer = null; // The player being dragged
+        this.showZones = false; // Toggle for zone lines
         
         this.initializeBoard();
         this.attachEventListeners();
@@ -35,8 +36,8 @@ class FootballTacticsBoard {
         ctx.strokeRect(0, 0, width, height);
         
         ctx.beginPath();
-        ctx.moveTo(width/2, 0);
-        ctx.lineTo(width/2, height);
+        ctx.moveTo(0, height/2);
+        ctx.lineTo(width, height/2);
         ctx.stroke();
         
         ctx.beginPath();
@@ -47,43 +48,88 @@ class FootballTacticsBoard {
         ctx.arc(width/2, height/2, 5, 0, 2 * Math.PI);
         ctx.fill();
         
-        ctx.strokeRect(0, height/2 - 80, 80, 160);
-        ctx.strokeRect(width - 80, height/2 - 80, 80, 160);
+        ctx.strokeRect(width/2 - 80, 0, 160, 80);
+        ctx.strokeRect(width/2 - 80, height - 80, 160, 80);
         
-        ctx.strokeRect(0, height/2 - 40, 20, 80);
-        ctx.strokeRect(width - 20, height/2 - 40, 20, 80);
+        ctx.strokeRect(width/2 - 40, 0, 80, 20);
+        ctx.strokeRect(width/2 - 40, height - 20, 80, 20);
+        
+        // Draw zone lines if enabled
+        if (this.showZones) {
+            this.drawZoneLines();
+        }
+    }
+    
+    drawZoneLines() {
+        const ctx = this.ctx;
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        
+        // Zone widths: 15%, 15%, 40%, 15%, 15%
+        const zone1 = width * 0.15;
+        const zone2 = width * 0.30; // 15% + 15%
+        const zone3 = width * 0.70; // 15% + 15% + 40%
+        const zone4 = width * 0.85; // 15% + 15% + 40% + 15%
+        
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]); // Dashed line pattern
+        
+        // Draw four vertical lines
+        ctx.beginPath();
+        ctx.moveTo(zone1, 0);
+        ctx.lineTo(zone1, height);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(zone2, 0);
+        ctx.lineTo(zone2, height);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(zone3, 0);
+        ctx.lineTo(zone3, height);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(zone4, 0);
+        ctx.lineTo(zone4, height);
+        ctx.stroke();
+        
+        // Reset line dash
+        ctx.setLineDash([]);
     }
     
     addDefaultPlayers() {
         const homeTeam = [
-            {id: 1, name: 'GK', position: 'GK', x: 50, y: 300, team: 'home'},
+            {id: 1, name: 'GK', position: 'GK', x: 300, y: 50, team: 'home'},
             {id: 2, name: 'RB', position: 'RB', x: 150, y: 150, team: 'home'},
-            {id: 3, name: 'CB', position: 'CB', x: 150, y: 250, team: 'home'},
-            {id: 4, name: 'CB', position: 'CB', x: 150, y: 350, team: 'home'},
-            {id: 5, name: 'LB', position: 'LB', x: 150, y: 450, team: 'home'},
-            {id: 6, name: 'CDM', position: 'CDM', x: 250, y: 300, team: 'home'},
-            {id: 7, name: 'RM', position: 'RM', x: 320, y: 200, team: 'home'},
-            {id: 8, name: 'CM', position: 'CM', x: 320, y: 300, team: 'home'},
-            {id: 9, name: 'LM', position: 'LM', x: 320, y: 400, team: 'home'},
-            {id: 10, name: 'ST', position: 'ST', x: 380, y: 260, team: 'home'},
-            {id: 11, name: 'ST', position: 'ST', x: 380, y: 340, team: 'home'}
+            {id: 3, name: 'CB', position: 'CB', x: 250, y: 150, team: 'home'},
+            {id: 4, name: 'CB', position: 'CB', x: 350, y: 150, team: 'home'},
+            {id: 5, name: 'LB', position: 'LB', x: 450, y: 150, team: 'home'},
+            {id: 6, name: 'CDM', position: 'CDM', x: 300, y: 250, team: 'home'},
+            {id: 7, name: 'RM', position: 'RM', x: 200, y: 320, team: 'home'},
+            {id: 8, name: 'CM', position: 'CM', x: 300, y: 320, team: 'home'},
+            {id: 9, name: 'LM', position: 'LM', x: 400, y: 320, team: 'home'},
+            {id: 10, name: 'ST', position: 'ST', x: 260, y: 380, team: 'home'},
+            {id: 11, name: 'ST', position: 'ST', x: 340, y: 380, team: 'home'}
         ];
         
         const awayTeam = [
-            {id: 12, name: 'GK', position: 'GK', x: 750, y: 300, team: 'away'},
-            {id: 13, name: 'RB', position: 'RB', x: 650, y: 150, team: 'away'},
-            {id: 14, name: 'CB', position: 'CB', x: 650, y: 250, team: 'away'},
-            {id: 15, name: 'CB', position: 'CB', x: 650, y: 350, team: 'away'},
-            {id: 16, name: 'LB', position: 'LB', x: 650, y: 450, team: 'away'},
-            {id: 17, name: 'CDM', position: 'CDM', x: 550, y: 300, team: 'away'},
-            {id: 18, name: 'RM', position: 'RM', x: 480, y: 200, team: 'away'},
-            {id: 19, name: 'CM', position: 'CM', x: 480, y: 300, team: 'away'},
-            {id: 20, name: 'LM', position: 'LM', x: 480, y: 400, team: 'away'},
-            {id: 21, name: 'ST', position: 'ST', x: 420, y: 260, team: 'away'},
-            {id: 22, name: 'ST', position: 'ST', x: 420, y: 340, team: 'away'}
+            {id: 12, name: 'GK', position: 'GK', x: 300, y: 750, team: 'away'},
+            {id: 13, name: 'RB', position: 'RB', x: 150, y: 650, team: 'away'},
+            {id: 14, name: 'CB', position: 'CB', x: 250, y: 650, team: 'away'},
+            {id: 15, name: 'CB', position: 'CB', x: 350, y: 650, team: 'away'},
+            {id: 16, name: 'LB', position: 'LB', x: 450, y: 650, team: 'away'},
+            {id: 17, name: 'CDM', position: 'CDM', x: 300, y: 550, team: 'away'},
+            {id: 18, name: 'RM', position: 'RM', x: 200, y: 480, team: 'away'},
+            {id: 19, name: 'CM', position: 'CM', x: 300, y: 480, team: 'away'},
+            {id: 20, name: 'LM', position: 'LM', x: 400, y: 480, team: 'away'},
+            {id: 21, name: 'ST', position: 'ST', x: 260, y: 420, team: 'away'},
+            {id: 22, name: 'ST', position: 'ST', x: 340, y: 420, team: 'away'}
         ];
         
-        this.ball = {id: 'ball', x: 400, y: 300};
+        this.ball = {id: 'ball', x: 300, y: 400};
         
         this.players = [...homeTeam, ...awayTeam];
         this.drawPlayers();
@@ -175,6 +221,7 @@ class FootballTacticsBoard {
         document.getElementById('loadBtn').addEventListener('click', () => this.loadFormation());
         document.getElementById('deleteBtn').addEventListener('click', () => this.deleteFormation());
         document.getElementById('clearBtn').addEventListener('click', () => this.clearBoard());
+        document.getElementById('toggleZonesBtn').addEventListener('click', () => this.toggleZones());
     }
     
     getMousePos(e) {
@@ -559,6 +606,11 @@ class FootballTacticsBoard {
     
     clearBoard() {
         this.addDefaultPlayers();
+    }
+    
+    toggleZones() {
+        this.showZones = !this.showZones;
+        this.drawPlayers();
     }
 }
 
