@@ -65,8 +65,8 @@ class FootballTacticsBoard {
             {id: 7, name: 'RM', position: 'RM', x: 320, y: 200, team: 'home'},
             {id: 8, name: 'CM', position: 'CM', x: 320, y: 300, team: 'home'},
             {id: 9, name: 'LM', position: 'LM', x: 320, y: 400, team: 'home'},
-            {id: 10, name: 'ST', position: 'ST', x: 400, y: 250, team: 'home'},
-            {id: 11, name: 'ST', position: 'ST', x: 400, y: 350, team: 'home'}
+            {id: 10, name: 'ST', position: 'ST', x: 380, y: 260, team: 'home'},
+            {id: 11, name: 'ST', position: 'ST', x: 380, y: 340, team: 'home'}
         ];
         
         const awayTeam = [
@@ -79,8 +79,8 @@ class FootballTacticsBoard {
             {id: 18, name: 'RM', position: 'RM', x: 480, y: 200, team: 'away'},
             {id: 19, name: 'CM', position: 'CM', x: 480, y: 300, team: 'away'},
             {id: 20, name: 'LM', position: 'LM', x: 480, y: 400, team: 'away'},
-            {id: 21, name: 'ST', position: 'ST', x: 400, y: 250, team: 'away'},
-            {id: 22, name: 'ST', position: 'ST', x: 400, y: 350, team: 'away'}
+            {id: 21, name: 'ST', position: 'ST', x: 420, y: 260, team: 'away'},
+            {id: 22, name: 'ST', position: 'ST', x: 420, y: 340, team: 'away'}
         ];
         
         this.ball = {id: 'ball', x: 400, y: 300};
@@ -200,6 +200,115 @@ class FootballTacticsBoard {
         return Math.sqrt(dx * dx + dy * dy) <= 8 ? this.ball : null;
     }
     
+    checkCollision(x, y, excludePlayer = null, playerRadius = 15) {
+        // Check collision with other players
+        for (let player of this.players) {
+            if (player === excludePlayer) continue;
+            
+            const dx = player.x - x;
+            const dy = player.y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = playerRadius + 15; // Both players have radius 15
+            
+            if (distance < minDistance) {
+                return true; // Collision detected
+            }
+        }
+        
+        // Check collision with ball
+        if (this.ball) {
+            const dx = this.ball.x - x;
+            const dy = this.ball.y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = playerRadius + 8; // Player radius + ball radius
+            
+            if (distance < minDistance) {
+                return true; // Collision with ball
+            }
+        }
+        
+        return false; // No collision
+    }
+    
+    isValidPosition(x, y, excludePlayer = null) {
+        // Check bounds (keep players within canvas)
+        const radius = 15;
+        if (x - radius < 0 || x + radius > this.canvas.width || 
+            y - radius < 0 || y + radius > this.canvas.height) {
+            return false;
+        }
+        
+        // Check collisions
+        return !this.checkCollision(x, y, excludePlayer);
+    }
+    
+    isValidBallPosition(x, y) {
+        // Check bounds (keep ball within canvas)
+        const radius = 8;
+        if (x - radius < 0 || x + radius > this.canvas.width || 
+            y - radius < 0 || y + radius > this.canvas.height) {
+            return false;
+        }
+        
+        // Check collision with players
+        for (let player of this.players) {
+            const dx = player.x - x;
+            const dy = player.y - y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = 15 + 8; // Player radius + ball radius
+            
+            if (distance < minDistance) {
+                return false; // Collision with player
+            }
+        }
+        
+        return true; // Valid position
+    }
+    
+    canMoveGroup(deltaX, deltaY) {
+        // Check if all selected players can move by the given delta
+        for (let player of this.selectedPlayers) {
+            const newX = player.x + deltaX;
+            const newY = player.y + deltaY;
+            
+            // Check bounds
+            const radius = 15;
+            if (newX - radius < 0 || newX + radius > this.canvas.width || 
+                newY - radius < 0 || newY + radius > this.canvas.height) {
+                return false;
+            }
+            
+            // Check collision with non-selected players
+            for (let otherPlayer of this.players) {
+                if (this.selectedPlayers.includes(otherPlayer)) {
+                    continue; // Skip other selected players
+                }
+                
+                const dx = otherPlayer.x - newX;
+                const dy = otherPlayer.y - newY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = 15 + 15; // Both players have radius 15
+                
+                if (distance < minDistance) {
+                    return false; // Collision detected
+                }
+            }
+            
+            // Check collision with ball
+            if (this.ball) {
+                const dx = this.ball.x - newX;
+                const dy = this.ball.y - newY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDistance = 15 + 8; // Player radius + ball radius
+                
+                if (distance < minDistance) {
+                    return false; // Collision with ball
+                }
+            }
+        }
+        return true;
+    }
+    
     handleMouseDown(e) {
         const pos = this.getMousePos(e);
         const player = this.getPlayerAt(pos.x, pos.y);
@@ -254,25 +363,34 @@ class FootballTacticsBoard {
                 const deltaX = pos.x - this.dragStartPos.x;
                 const deltaY = pos.y - this.dragStartPos.y;
                 
-                // Move all selected players by the same delta
-                this.selectedPlayers.forEach(player => {
-                    player.x += deltaX;
-                    player.y += deltaY;
-                });
-                
-                // Update drag start position for next move calculation
-                this.dragStartPos.x = pos.x;
-                this.dragStartPos.y = pos.y;
-                
-                this.drawPlayers();
+                // Check if the group can move without collisions
+                if (this.canMoveGroup(deltaX, deltaY)) {
+                    // Move all selected players by the same delta
+                    this.selectedPlayers.forEach(player => {
+                        player.x += deltaX;
+                        player.y += deltaY;
+                    });
+                    
+                    // Update drag start position for next move calculation
+                    this.dragStartPos.x = pos.x;
+                    this.dragStartPos.y = pos.y;
+                    
+                    this.drawPlayers();
+                }
             } else if (this.selectedPlayer) {
-                this.selectedPlayer.x = pos.x;
-                this.selectedPlayer.y = pos.y;
-                this.drawPlayers();
+                // Check if new position is valid for single player
+                if (this.isValidPosition(pos.x, pos.y, this.selectedPlayer)) {
+                    this.selectedPlayer.x = pos.x;
+                    this.selectedPlayer.y = pos.y;
+                    this.drawPlayers();
+                }
             } else if (this.selectedBall) {
-                this.selectedBall.x = pos.x;
-                this.selectedBall.y = pos.y;
-                this.drawPlayers();
+                // Check if new position is valid for ball
+                if (this.isValidBallPosition(pos.x, pos.y)) {
+                    this.selectedBall.x = pos.x;
+                    this.selectedBall.y = pos.y;
+                    this.drawPlayers();
+                }
             }
         }
     }
