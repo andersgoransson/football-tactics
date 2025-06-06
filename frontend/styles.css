@@ -22,7 +22,22 @@ body {
 h1 {
     text-align: center;
     color: #333;
+    margin-bottom: 10px;
+}
+
+.instructions {
+    text-align: center;
+    background-color: #f8f9fa;
+    padding: 8px 16px;
+    border-radius: 6px;
     margin-bottom: 20px;
+    border-left: 4px solid #007bff;
+}
+
+.instructions p {
+    margin: 0;
+    font-size: 14px;
+    color: #495057;
 }
 
 .controls {

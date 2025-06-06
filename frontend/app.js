@@ -4,8 +4,12 @@ class FootballTacticsBoard {
         this.ctx = this.canvas.getContext('2d');
         this.players = [];
         this.selectedPlayer = null;
+        this.selectedPlayers = []; // Array for multi-selection
         this.isDragging = false;
+        this.isGroupDragging = false;
         this.formations = [];
+        this.dragStartPos = { x: 0, y: 0 }; // Starting position for drag
+        this.draggedPlayer = null; // The player being dragged
         
         this.initializeBoard();
         this.attachEventListeners();
@@ -101,15 +105,34 @@ class FootballTacticsBoard {
     drawPlayer(player) {
         const ctx = this.ctx;
         const radius = 15;
+        const isSelected = this.selectedPlayers.includes(player);
         
         ctx.fillStyle = player.team === 'home' ? '#ff4444' : '#4444ff';
         ctx.beginPath();
         ctx.arc(player.x, player.y, radius, 0, 2 * Math.PI);
         ctx.fill();
         
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
+        // Draw selection indicator
+        if (isSelected) {
+            ctx.strokeStyle = '#ffff00'; // Yellow for selected
+            ctx.lineWidth = 4;
+        } else {
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+        }
         ctx.stroke();
+        
+        // Add selection glow effect
+        if (isSelected) {
+            ctx.shadowColor = '#ffff00';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, radius + 2, 0, 2 * Math.PI);
+            ctx.strokeStyle = '#ffff00';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
         
         ctx.fillStyle = '#ffffff';
         ctx.font = '12px Arial';
@@ -144,6 +167,9 @@ class FootballTacticsBoard {
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        
+        // Keyboard events for multi-selection
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
         
         document.getElementById('saveBtn').addEventListener('click', () => this.saveFormation());
         document.getElementById('loadBtn').addEventListener('click', () => this.loadFormation());
@@ -180,13 +206,42 @@ class FootballTacticsBoard {
         const ball = this.getBallAt(pos.x, pos.y);
         
         if (player) {
-            this.selectedPlayer = player;
-            this.selectedBall = null;
-            this.isDragging = true;
+            if (e.ctrlKey || e.metaKey) {
+                // Multi-selection with Ctrl/Cmd key
+                this.togglePlayerSelection(player);
+                this.selectedPlayer = null;
+                this.selectedBall = null;
+            } else {
+                // Check if clicked player is already in selection
+                if (this.selectedPlayers.includes(player)) {
+                    // Start group dragging
+                    this.isGroupDragging = true;
+                    this.draggedPlayer = player;
+                    this.dragStartPos.x = pos.x;
+                    this.dragStartPos.y = pos.y;
+                } else {
+                    // Single selection
+                    this.selectedPlayers = [];
+                    this.selectedPlayer = player;
+                    this.selectedBall = null;
+                }
+                this.isDragging = true;
+            }
+            this.drawPlayers();
         } else if (ball) {
+            this.selectedPlayers = [];
             this.selectedBall = ball;
             this.selectedPlayer = null;
             this.isDragging = true;
+            this.drawPlayers();
+        } else {
+            // Clicked on empty space - clear selection
+            if (!e.ctrlKey && !e.metaKey) {
+                this.selectedPlayers = [];
+                this.selectedPlayer = null;
+                this.selectedBall = null;
+                this.drawPlayers();
+            }
         }
     }
     
@@ -194,7 +249,23 @@ class FootballTacticsBoard {
         if (this.isDragging) {
             const pos = this.getMousePos(e);
             
-            if (this.selectedPlayer) {
+            if (this.isGroupDragging && this.selectedPlayers.length > 0 && this.draggedPlayer) {
+                // Calculate how much the dragged player should move
+                const deltaX = pos.x - this.dragStartPos.x;
+                const deltaY = pos.y - this.dragStartPos.y;
+                
+                // Move all selected players by the same delta
+                this.selectedPlayers.forEach(player => {
+                    player.x += deltaX;
+                    player.y += deltaY;
+                });
+                
+                // Update drag start position for next move calculation
+                this.dragStartPos.x = pos.x;
+                this.dragStartPos.y = pos.y;
+                
+                this.drawPlayers();
+            } else if (this.selectedPlayer) {
                 this.selectedPlayer.x = pos.x;
                 this.selectedPlayer.y = pos.y;
                 this.drawPlayers();
@@ -208,8 +279,31 @@ class FootballTacticsBoard {
     
     handleMouseUp(e) {
         this.isDragging = false;
+        this.isGroupDragging = false;
         this.selectedPlayer = null;
         this.selectedBall = null;
+        this.draggedPlayer = null;
+    }
+    
+    togglePlayerSelection(player) {
+        const index = this.selectedPlayers.indexOf(player);
+        if (index > -1) {
+            // Remove from selection
+            this.selectedPlayers.splice(index, 1);
+        } else {
+            // Add to selection
+            this.selectedPlayers.push(player);
+        }
+    }
+    
+    handleKeyDown(e) {
+        if (e.key === 'Escape') {
+            // Clear all selections
+            this.selectedPlayers = [];
+            this.selectedPlayer = null;
+            this.selectedBall = null;
+            this.drawPlayers();
+        }
     }
     
     async saveFormation() {
